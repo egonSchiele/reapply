@@ -1,3 +1,5 @@
-import Reapply
-main = putStrLn "hello world!"
-  
+import ReApply
+import Types
+
+test = Item "foo" "hello world!"
+main = apply test
