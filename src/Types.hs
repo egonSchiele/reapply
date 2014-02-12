@@ -1,8 +1,11 @@
 module Types where
 import Text.Parsec hiding (Line)
-import Control.Applicative
+import Control.Applicative hiding (optional, (<|>))
 import Text.Printf
 import Data.List
+
+-- This works with `diff -u` (which uses the unified diff format). It 
+-- *almost* works with `git diff` but not quite yet.
 
 join elem list = concat $ intersperse elem list
 
@@ -65,17 +68,16 @@ chunkParser = do
     -- TODO: parse lines into a vs b's lines:
     return $ Chunk startA_ startB_ sizeA_ sizeB_ chunkLines
 
-diffParser = do
+headerParser = do
     fileA <- string "---" >> spaces >> manyTill anyChar space
     br
     fileB <- string "+++" >> spaces >> manyTill anyChar space
     br
-    chunk <- chunkParser
-    return $ Diff fileA fileB [chunk]
-
-main = do
-    diff <- readFile "test.diff"
-    case parse diffParser "" diff of
-      Left err -> print err
-      Right obj -> print obj
-
+    return (fileA, fileB)
+    
+diffParser = do
+    optional $ string "diff " >> br
+    optional $ string "index " >> br
+    (fileA, fileB) <- headerParser
+    chunks <- many1 chunkParser
+    return $ Diff fileA fileB chunks
