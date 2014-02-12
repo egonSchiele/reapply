@@ -1,7 +1,15 @@
 import Test.Hspec
-import Reapply
+import ReApply
+import Types
+import Text.Parsec
+
+io = flip shouldReturn
+
 main = hspec $ do
-  describe "specs" $ do
-    it "should work" $ do
-      1 == 1
-  
+  describe "Diff" $ do
+    it "should parse a diff successfully" $ do
+      io True $ do
+        contents <- readFile "spec/test.diff"
+        case parse diffParser "" contents of
+          Left _ -> return False
+          Right _ -> return True

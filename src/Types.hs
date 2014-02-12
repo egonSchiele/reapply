@@ -1,3 +1,5 @@
+{-# LANGUAGE NoMonomorphismRestriction #-}
+
 module Types where
 import Text.Parsec hiding (Line)
 import Control.Applicative hiding (optional, (<|>))
