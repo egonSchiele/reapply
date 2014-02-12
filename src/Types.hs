@@ -9,6 +9,16 @@ import Data.List
 
 join elem list = concat $ intersperse elem list
 
+-- | A full diff on two files, like:
+--
+-- > --- a	2014-02-11 15:07:26.000000000 -0800
+-- > +++ b	2014-02-11 15:08:07.000000000 -0800
+-- > @@ -1,2 +1,4 @@
+-- >  hello
+-- > -there
+-- > +
+-- > +world
+-- > +ok
 data Diff = Diff {
           aPath :: String,
           bPath :: String,
@@ -18,6 +28,15 @@ data Diff = Diff {
 instance Show Diff where
     show (Diff a b chunks) = printf "--- %s\n+++ %s\n%s" a b (join "\n" . map show $ chunks)
 
+
+-- | represents one "chunk", which is something like:
+--
+-- > @@ -1,2 +1,4 @@
+-- >  hello
+-- > -there
+-- > +
+-- > +world
+-- > +ok
 data Chunk = Chunk {
            startA :: Int,
            startB :: Int,
@@ -29,6 +48,7 @@ data Chunk = Chunk {
 instance Show Chunk where
     show (Chunk stA stB szA szB ch) = printf "@@ -%d,%d +%d,%d @@\n%s" stA szA stB szB (join "\n" . map show $ ch)
 
+
 data ModType = Common | Addition | Deletion
 
 instance Show ModType where
@@ -36,6 +56,10 @@ instance Show ModType where
   show Addition = "+"
   show Deletion = "-"
 
+
+-- | Represents one diff line, like
+--
+-- > +this line got added.
 data Line = Line {
           modType :: ModType,
           contents :: String
@@ -43,6 +67,10 @@ data Line = Line {
 
 instance Show Line where
   show (Line m c) = show m ++ c
+
+-----------------------------------
+-- PARSERS
+-- --------------------------------
 
 startAndSize = do
     startA_ <- read <$> many1 digit
