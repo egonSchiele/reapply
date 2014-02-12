@@ -1,12 +1,19 @@
 module Types where
 import Text.Parsec hiding (Line)
 import Control.Applicative
+import Text.Printf
+import Data.List
+
+join elem list = concat $ intersperse elem list
 
 data Diff = Diff {
           aPath :: String,
           bPath :: String,
           chunks :: [Chunk]
-} deriving (Show)
+}
+
+instance Show Diff where
+    show (Diff a b chunks) = printf "--- %s\n+++ %s\n%s" a b (join "\n" . map show $ chunks)
 
 data Chunk = Chunk {
            startA :: Int,
@@ -16,12 +23,23 @@ data Chunk = Chunk {
            changes :: [Line]
 }
 
-data ModType = Common | Addition | Deletion deriving (Show)
+instance Show Chunk where
+    show (Chunk stA stB szA szB ch) = printf "@@ -%d,%d +%d,%d @@\n%s" stA szA stB szB (join "\n" . map show $ ch)
+
+data ModType = Common | Addition | Deletion
+
+instance Show ModType where
+  show Common = " "
+  show Addition = "+"
+  show Deletion = "-"
 
 data Line = Line {
           modType :: ModType,
           contents :: String
-} deriving (Show)
+}
+
+instance Show Line where
+  show (Line m c) = show m ++ c
 
 startAndSize = do
     startA_ <- read <$> many1 digit
