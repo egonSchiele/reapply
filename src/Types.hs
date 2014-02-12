@@ -1,11 +1,6 @@
 module Types where
-import Utils
-import Text.Parsec
-
-data Item = Item {
-          path :: String,
-          content :: String
-} deriving (Eq)
+import Text.Parsec hiding (Line)
+import Control.Applicative
 
 data Diff = Diff {
           aPath :: String,
@@ -18,26 +13,51 @@ data Chunk = Chunk {
            startB :: Int,
            sizeA  :: Int,
            sizeB  :: Int,
-           linesA :: [Line],
-           linesB :: [Line]
-} deriving (Show)
+           changes :: [Line]
+}
 
-data Modtype = Insertion | Deletion deriving (Show)
+data ModType = Common | Addition | Deletion deriving (Show)
 
 data Line = Line {
-          modType :: ModType
-          data :: String
+          modType :: ModType,
+          contents :: String
 } deriving (Show)
 
-tmp $ diff -u a b
---- a	2014-02-11 15:07:26.000000000 -0800
-+++ b	2014-02-11 15:08:07.000000000 -0800
-@@ -1,2 +1,4 @@
- hello
--there
-+
-+world
-+ok
+startAndSize = do
+    startA_ <- read <$> many1 digit
+    char ','
+    sizeA_ <- read <$> many1 digit
+    return (startA_, sizeA_)
 
-instance Show Item where
-  show item = show (path item, content item)
+br = anyChar `manyTill` newline
+
+lineParser = do
+    modType_ <- oneOf " -+"
+    contents_ <- manyTill anyChar newline
+    return $ case modType_ of
+               ' ' -> Line Common contents_
+               '-' -> Line Deletion contents_
+               '+' -> Line Addition contents_
+
+chunkParser = do
+    (startA_, sizeA_) <- string "@@ -" >> startAndSize
+    (startB_, sizeB_) <- string " +" >> startAndSize
+    br
+    chunkLines <- many1 lineParser
+    -- TODO: parse lines into a vs b's lines:
+    return $ Chunk startA_ startB_ sizeA_ sizeB_ chunkLines
+
+diffParser = do
+    fileA <- string "---" >> spaces >> manyTill anyChar space
+    br
+    fileB <- string "+++" >> spaces >> manyTill anyChar space
+    br
+    chunk <- chunkParser
+    return $ Diff fileA fileB [chunk]
+
+main = do
+    diff <- readFile "test.diff"
+    case parse diffParser "" diff of
+      Left err -> print err
+      Right obj -> print obj
+
